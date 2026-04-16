@@ -1,0 +1,26 @@
+# AgentTrader bağımlılıkları
+# NOT: Minimum versiyonlar (>=), güvenlik yamaları ve Python 3.12+ uyumluluğu için.
+# Exact pin yapmak yerine alt sınır ile esneklik.
+
+ccxt>=4.4.0,<5.0.0
+fastapi>=0.115.0,<1.0.0
+uvicorn[standard]>=0.30.0
+websockets>=12.0,<14.0
+python-telegram-bot>=21.0,<23.0
+# SQLAlchemy 2.0.0 çok eski; 2.0.20+ async improvements ve bug fix'ler içerir
+SQLAlchemy>=2.0.20,<3.0.0
+pandas>=2.2.0
+# numpy 2.x pandas 2.2+ ile uyumlu
+numpy>=1.26.0,<3.0.0
+python-dotenv>=1.0.0
+aiohttp>=3.10.0
+ta>=0.11.0
+schedule>=1.2.0
+# Pydantic FastAPI tarafından transitive olarak yükleniyor (v2)
+
+# Rate limiting (BLOK 8)
+slowapi>=0.1.9
+
+# Test bağımlılıkları (BLOK 6B)
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentTrader - OKX Bot Dashboard</title>
+<link rel="stylesheet" href="/static/css/style.css">
+<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="logo">AT</div>
+    <div class="brand-text">
+      <h1>AgentTrader</h1>
+      <span class="subtitle">OKX Crypto Trading Bot</span>
+    </div>
+  </div>
+
+  <div class="header-controls">
+    <div class="status-indicator" id="statusIndicator">
+      <span class="dot"></span>
+      <span class="status-text" id="statusText">DURAKLATILDI</span>
+    </div>
+
+    <div class="telegram-status" id="telegramStatus" title="Telegram baglantisi">
+      <span class="tg-icon">TG</span>
+      <span class="tg-text">-</span>
+    </div>
+
+    <!-- PAPER MODE TOGGLE (BLOK 7A) -->
+    <div class="paper-mode" id="paperModeContainer" title="Paper Trading modu">
+      <span class="paper-label" id="paperLabel">PAPER: OFF</span>
+      <button class="btn btn-small" id="btnPaperToggle">Ac</button>
+    </div>
+
+    <button class="btn btn-success" id="btnStart">Baslat</button>
+    <button class="btn btn-warning" id="btnPause">Duraklat</button>
+    <button class="btn btn-danger" id="btnStop">Durdur</button>
+  </div>
+</header>
+
+<main class="dashboard">
+
+  <!-- SOL PANEL -->
+  <aside class="left-panel">
+
+    <div class="card balance-card">
+      <div class="card-title">Bakiye (USDT)</div>
+      <div class="balance-value" id="balanceValue">0.00</div>
+      <div class="balance-free" id="balanceFree">Serbest: 0.00</div>
+    </div>
+
+    <div class="card pnl-card">
+      <div class="card-title">Toplam PnL</div>
+      <div class="pnl-value" id="totalPnl">0.00</div>
+      <div class="pnl-details">
+        <div>
+          <span class="label">Gunluk</span>
+          <span id="dailyPnl">0.00</span>
+        </div>
+        <div>
+          <span class="label">Gerceklesmemis</span>
+          <span id="unrealizedPnl">0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card metrics-card">
+      <div class="card-title">Performans</div>
+      <div class="metric-row">
+        <span>Win Rate</span>
+        <span id="winRate">0.00%</span>
+      </div>
+      <div class="metric-row">
+        <span>Toplam Trade</span>
+        <span id="totalTrades">0</span>
+      </div>
+      <div class="metric-row">
+        <span>Sharpe Ratio</span>
+        <span id="sharpeRatio">0.00</span>
+      </div>
+      <div class="metric-row">
+        <span>Profit Factor</span>
+        <span id="profitFactor">-</span>
+      </div>
+    </div>
+
+    <div class="card positions-card">
+      <div class="card-title">Acik Pozisyonlar
+        <span class="badge" id="positionsCount">0</span>
+      </div>
+      <div class="positions-list" id="positionsList">
+        <div class="empty">Acik pozisyon yok</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ORTA PANEL -->
+  <section class="center-panel">
+
+    <div class="card chart-card">
+      <div class="chart-header">
+        <div class="symbol-selector">
+          <div class="symbol-search-wrapper">
+            <input type="text" id="symbolSelect" value="BTC/USDT" placeholder="Sembol ara..." list="symbolDatalist" style="width:130px;">
+            <datalist id="symbolDatalist">
+              <option value="BTC/USDT">
+              <option value="ETH/USDT">
+              <option value="SOL/USDT">
+            </datalist>
+          </div>
+          <select id="timeframeSelect">
+            <option value="5m">5m</option>
+            <option value="15m" selected>15m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+            <option value="1d">1d</option>
+          </select>
+        </div>
+
+        <div class="price-info">
+          <span class="current-price" id="currentPrice">-</span>
+          <span class="price-change" id="priceChange">-</span>
+        </div>
+      </div>
+
+      <div id="chart" class="chart-container"></div>
+    </div>
+
+    <div class="card" style="padding:10px;">
+      <div class="card-title">Sinyal Filtreleri</div>
+      <div class="signal-filters">
+        <label class="filter-label"><input type="checkbox" class="signal-filter" value="rsi_bb" checked> <span style="color:#3fb950">RSI+BB</span></label>
+        <label class="filter-label"><input type="checkbox" class="signal-filter" value="macd_signal" checked> <span style="color:#58a6ff">MACD</span></label>
+        <label class="filter-label"><input type="checkbox" class="signal-filter" value="stoch_rsi" checked> <span style="color:#a371f7">StochRSI</span></label>
+        <label class="filter-label"><input type="checkbox" class="signal-filter" value="ma_crossover" checked> <span style="color:#e3b341">MA Cross</span></label>
+        <label class="filter-label"><input type="checkbox" class="signal-filter" value="grid_trading" checked> <span style="color:#39d353">Grid</span></label>
+      </div>
+    </div>
+
+    <div class="card strategies-card">
+      <div class="card-title">Stratejiler <span style="font-size:10px;color:var(--text-secondary)">(sinyaller grafik üzerinde gösterilir)</span></div>
+      <div class="strategies-list" id="strategiesList"></div>
+    </div>
+
+    <div class="card backtest-card">
+      <div class="card-title">Backtesting</div>
+      <div class="backtest-form">
+        <div class="bt-row">
+          <div class="symbol-search-wrapper" style="flex:1;">
+            <input type="text" id="btSymbol" value="BTC/USDT" placeholder="Sembol..." list="btSymbolDatalist">
+            <datalist id="btSymbolDatalist">
+              <option value="BTC/USDT">
+              <option value="ETH/USDT">
+              <option value="SOL/USDT">
+            </datalist>
+          </div>
+          <select id="btTimeframe" style="width:80px;">
+            <option value="15m" selected>15m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+            <option value="1d">1d</option>
+          </select>
+        </div>
+        <div class="bt-row">
+          <select id="btStrategy">
+            <option value="rsi_bb">RSI + BB</option>
+            <option value="ma_crossover">MA Crossover</option>
+            <option value="grid_trading">Grid Trading</option>
+            <option value="macd_signal">MACD + EMA200</option>
+            <option value="stoch_rsi">Stoch RSI + Vol</option>
+          </select>
+          <div class="input-unit-wrapper" style="width:100px;">
+            <input type="number" id="btBalance" value="1000" min="100">
+            <span class="unit">USDT</span>
+          </div>
+        </div>
+        <div class="bt-row">
+          <div class="input-unit-wrapper">
+            <input type="number" id="btStopLoss" value="2" min="0.1" max="20" step="0.1" style="width:60px;">
+            <span class="unit">% SL</span>
+          </div>
+          <div class="input-unit-wrapper">
+            <input type="number" id="btTakeProfit" value="4" min="0.1" max="50" step="0.1" style="width:60px;">
+            <span class="unit">% TP</span>
+          </div>
+          <div class="input-unit-wrapper">
+            <input type="number" id="btPositionSize" value="5" min="1" max="100" step="1" style="width:60px;">
+            <span class="unit">% Pos</span>
+          </div>
+        </div>
+        <div class="bt-row">
+          <div class="input-unit-wrapper">
+            <input type="number" id="btLimit" value="500" min="100" max="2000">
+            <span class="unit">mum</span>
+          </div>
+          <label class="filter-label" style="font-size:11px;">
+            <input type="checkbox" id="btDemoMode"> Demo Mod
+          </label>
+        </div>
+        <div class="bt-row">
+          <button class="btn btn-primary btn-block" id="btnRunBacktest">Backtest Baslat</button>
+          <button class="btn btn-small" id="btnClearBacktest" style="margin-left:4px">Temizle</button>
+        </div>
+        <div class="bt-row">
+          <button class="btn btn-small btn-block" id="btnCompareAll">Tum Stratejileri Karsilastir</button>
+        </div>
+      </div>
+      <div id="btResults" style="margin-top:8px;font-size:12px;"></div>
+      <div class="equity-panel" id="equityPanel" style="display:none;">
+        <div class="card-title" style="padding:6px 8px;font-size:11px;">Equity Egrisi</div>
+        <div class="equity-chart-container" id="equityChart"></div>
+      </div>
+      <div id="btTradeTable" style="display:none;max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <div class="card logs-card">
+      <div class="card-title">
+        Canli Loglar
+        <button class="btn btn-small" id="btnClearLogs">Temizle</button>
+      </div>
+      <div class="logs-container" id="logsContainer"></div>
+    </div>
+
+  </section>
+
+  <!-- SAĞ PANEL -->
+  <aside class="right-panel">
+
+    <div class="card trades-card">
+      <div class="card-title">Son Trade'ler</div>
+      <div class="trades-list" id="tradesList">
+        <div class="empty">Trade yok</div>
+      </div>
+    </div>
+
+    <div class="card manual-order-card">
+      <div class="card-title">Manuel Emir</div>
+      <form id="manualOrderForm" class="manual-order-form">
+        <select id="moSymbol" required>
+          <option value="BTC/USDT">BTC/USDT</option>
+          <option value="ETH/USDT">ETH/USDT</option>
+          <option value="SOL/USDT">SOL/USDT</option>
+        </select>
+        <div class="side-selector">
+          <label>
+            <input type="radio" name="side" value="buy" checked>
+            <span class="side-buy">AL</span>
+          </label>
+          <label>
+            <input type="radio" name="side" value="sell">
+            <span class="side-sell">SAT</span>
+          </label>
+        </div>
+        <input type="number" id="moAmount" placeholder="Miktar" step="0.00001" required>
+        <select id="moType">
+          <option value="market">Market</option>
+          <option value="limit">Limit</option>
+        </select>
+        <input type="number" id="moPrice" placeholder="Fiyat (limit icin)" step="0.01">
+        <button type="submit" class="btn btn-primary btn-block">Emir Gonder</button>
+      </form>
+    </div>
+
+    <div class="card alarm-card">
+      <div class="card-title">Fiyat Alarmi</div>
+      <div class="alarm-form" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <select id="alarmSymbol">
+          <option value="BTC/USDT">BTC/USDT</option>
+          <option value="ETH/USDT">ETH/USDT</option>
+          <option value="SOL/USDT">SOL/USDT</option>
+        </select>
+        <select id="alarmDir">
+          <option value="above">Ustunde</option>
+          <option value="below">Altinda</option>
+        </select>
+        <input id="alarmPrice" type="number" step="0.01" placeholder="Fiyat" style="grid-column:span 2;">
+        <button id="btnSetAlarm" class="btn btn-primary btn-block" style="grid-column:span 2;">Alarm Kur</button>
+      </div>
+      <div id="alarmsList" style="font-size:11px;max-height:150px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- PAPER TRADING ÖZET KARTI (BLOK 7A) -->
+    <div class="card paper-card" id="paperCard" style="display:none;">
+      <div class="card-title">Paper Trading</div>
+      <div class="metric-row">
+        <span>Paper Bakiye</span>
+        <span id="paperBalance">0.00</span>
+      </div>
+      <div class="metric-row">
+        <span>Equity</span>
+        <span id="paperEquity">0.00</span>
+      </div>
+      <div class="metric-row">
+        <span>Toplam PnL</span>
+        <span id="paperPnl">0.00</span>
+      </div>
+      <div class="metric-row">
+        <span>Acik Pozisyon</span>
+        <span id="paperPositions">0</span>
+      </div>
+      <button id="btnPaperReset" class="btn btn-small btn-block" style="margin-top:6px;">Sifirla</button>
+    </div>
+
+    <div class="card risk-card">
+      <div class="card-title">Risk Durumu</div>
+      <div class="metric-row">
+        <span>Max Pozisyon %</span>
+        <span id="maxPositionPct">5%</span>
+      </div>
+      <div class="metric-row">
+        <span>Stop Loss %</span>
+        <span id="stopLossPct">2%</span>
+      </div>
+      <div class="metric-row">
+        <span>Take Profit %</span>
+        <span id="takeProfitPct">4%</span>
+      </div>
+      <div class="metric-row">
+        <span>Gunluk Kayip</span>
+        <span id="dailyLossPct">0%</span>
+      </div>
+      <div class="metric-row">
+        <span>Drawdown</span>
+        <span id="drawdownPct">0%</span>
+      </div>
+    </div>
+
+  </aside>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="/static/js/charts.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
